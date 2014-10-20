@@ -1,0 +1,8 @@
+*.DS_Store
+*.pyc
+.settings/*
+.project
+.pydevproject
+build/*
+dist/*
+weppy_Oauth2.egg-info/*

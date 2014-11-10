@@ -42,24 +42,15 @@ class Oauth2(Extension):
 class LoginHandler(AuthLoginHandler):
     socket_timeout = 60
 
-    def __redirect_uri(self, _next=None):
+    def __redirect_uri(self):
         """
         Build the uri used by the authenticating server to redirect
         the client back to the page originating the auth request.
         Appends the _next action to the generated url so the flows continues.
         """
-        http_host = request.env.http_host
-
-        if request.env.https == 'on':
-            url_scheme = 'https'
-        else:
-            url_scheme = request.env.wsgi_url_scheme
-        if _next:
-            path_info = _next
-        else:
-            path_info = request.env.path_info
-        uri = '%s://%s%s' % (url_scheme, http_host, path_info)
-        if request.get_vars and not _next:
+        uri = '%s://%s%s' % (request.scheme, request.hostname,
+                             request.path_info)
+        if request.get_vars:
             uri += '?' + urlencode(request.get_vars)
         return uri
 
@@ -112,27 +103,30 @@ class LoginHandler(AuthLoginHandler):
                 raise Exception(tmp)
             finally:
                 if session.code:
-                    del session.code  # throw it away
+                    del session.code
+                if session.redirect_uri:
+                    del session.redirect_uri
 
             if open_url:
                 try:
                     data = open_url.read()
                     resp_type = open_url.info().gettype()
-                    # try json style first
+                    #: try json style first
                     if not resp_type or resp_type[:16] == 'application/json':
                         try:
                             tokendata = json.loads(data)
                             session.token = tokendata
                         except Exception, e:
                             raise Exception("Cannot parse oauth server response %s %s" % (data, e))
-                    else: # try facebook style first with x-www-form-encoded
+                    #: try with x-www-form-encoded
+                    else:
                         tokendata = cgi.parse_qs(data)
                         session.token = \
                             dict([(k, v[-1]) for k, v in tokendata.items()])
-                    if not tokendata: # parsing failed?
+                    #: we failed parsing
+                    if not tokendata:
                         raise Exception("Cannot parse oauth server response %s" % data)
-                    # set expiration absolute time try to avoid broken
-                    # implementations where "expires_in" becomes "expires"
+                    #: set expiration
                     if 'expires_in' in session.token:
                         exps = 'expires_in'
                     elif 'expires' in session.token:
@@ -149,7 +143,7 @@ class LoginHandler(AuthLoginHandler):
         session.token = None
         return None
 
-    def __oauth_login(self, _next):
+    def __oauth_login(self):
         """
         This method redirects the user to the authenticating form
         on authentication server if the authentication code
@@ -163,7 +157,7 @@ class LoginHandler(AuthLoginHandler):
 
         token = self.accessToken()
         if not token:
-            session.redirect_uri = self.__redirect_uri(_next)
+            session.redirect_uri = self.__redirect_uri()
             data = dict(redirect_uri=session.redirect_uri,
                         response_type='code',
                         client_id=self.env.client_id)
@@ -172,7 +166,7 @@ class LoginHandler(AuthLoginHandler):
         return
 
     def login_url(self, _next="/"):
-        self.__oauth_login(_next)
+        self.__oauth_login()
         return _next
 
     def logout_url(self, _next="/"):

@@ -3,8 +3,7 @@
 weppy-Oauth2
 ------------
 
-This extension provides a simple interface to add
-oauth2 login in weppy.
+This extension provides a simple interface to add oauth2 login in weppy.
 """
 
 from setuptools import setup
@@ -12,12 +11,12 @@ from setuptools import setup
 setup(
     name='weppy-Oauth2',
     version='0.1',
-    url='',
+    url='https://github.com/gi0baro/weppy-oauth2',
     license='BSD',
     author='Giovanni Barillari',
     author_email='gi0baro@d4net.org',
-    description='Oauth2 login interface for wwppy',
-    #long_description=__doc__,
+    description='Oauth2 login interface for weppy',
+    long_description=__doc__,
     packages=['weppy_oauth2'],
     install_requires=['weppy'],
     zip_safe=False,
